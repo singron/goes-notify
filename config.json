@@ -12,6 +12,7 @@
 
   "__comment": "Below are optional:",
   "use_gmail": true,
+  "use_sendmail": false,
   "gmail_password": "",
   "no_email": false,
   "no_spamming": true,

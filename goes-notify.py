@@ -27,7 +27,8 @@ EMAIL_TEMPLATE = """
 GOES_URL_FORMAT = 'https://ttp.cbp.dhs.gov/schedulerapi/slots?orderBy=soonest&limit=3&locationId={0}&minimum=1'
 
 
-def notify_send_email(dates, current_apt, settings, use_gmail=False):
+def notify_send_email(dates, current_apt, settings, use_gmail=False,
+                      use_sendmail=False):
     sender = settings.get('email_from')
     # If recipient isn't provided, send to self.
     recipient = settings.get('email_to', sender)
@@ -42,6 +43,8 @@ def notify_send_email(dates, current_apt, settings, use_gmail=False):
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
             server.login(sender, password)
+        elif use_sendmail:
+            pass
         else:
             username = settings.get('email_username').encode('utf-8')
             password = settings.get('email_password').encode('utf-8')
@@ -72,8 +75,11 @@ def notify_send_email(dates, current_apt, settings, use_gmail=False):
         msg['content-type'] = "text/html"
         msg.attach(MIMEText(message, 'html'))
 
-        server.sendmail(sender, recipient, msg.as_string())
-        server.quit()
+        if use_sendmail:
+            subprocess.run(['sendmail', '-t'], input=msg.as_bytes(), check=True)
+        else:
+            server.sendmail(sender, recipient, msg.as_string())
+            server.quit()
     except Exception:
         logging.exception('Failed to send succcess e-mail.')
 
@@ -160,7 +166,8 @@ def main(settings):
         notify_osx(msg)
     if not settings.get('no_email'):
         notify_send_email(dates, current_apt, settings,
-                          use_gmail=settings.get('use_gmail'))
+                          use_gmail=settings.get('use_gmail'),
+                          use_sendmail=settings.get('use_sendmail'))
     if settings.get('twilio_account_sid'):
         notify_sms(settings, dates)
 
